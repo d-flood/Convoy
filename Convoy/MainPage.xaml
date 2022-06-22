@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Convoy.MainPage"
+             xmlns:viewmodel="clr-namespace:Convoy.ViewModels"
+             x:DataType="viewmodel:MainViewModel"
+             x:Name="this">
+               
+    <ContentPage.MenuBarItems>
+        <MenuBarItem Text="File"
+                     BindingContext="{Binding Path=BindingContext, Source={x:Reference this}}">
+            <MenuFlyoutItem Text="Show files in source and not in target"
+                            Command="{Binding DiffDirectoriesCommand}"/>
+        </MenuBarItem>
+    </ContentPage.MenuBarItems>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="45"/>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="50" />
+            <RowDefinition Height="55" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Label
+            Grid.Row="0"
+            Grid.Column="0"
+            Text="Options"
+            FontSize="20"
+            FontAttributes="Italic"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"/>
+
+        <Grid
+            Grid.Row="1"
+            Grid.Column="0">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="75"/>
+                <RowDefinition Height="40"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Label
+                Grid.Row="0"
+                VerticalOptions="Center"
+                HorizontalOptions="Center"
+                Text="Overwrite Existing Files"
+                FontSize="12"
+                Padding="0,25,0,0"/>
+
+            <CheckBox
+                Grid.Row="1"
+                HorizontalOptions="Center"
+                IsChecked="{Binding Overwrite}"/>
+
+        </Grid>
+
+            <ProgressBar
+            Grid.Row="0"
+            Grid.Column="2"
+            IsVisible="{Binding ProgressBarIsVisible}"
+            Progress="{Binding CopyProgress}"/>
+
+        <!--SOURCE FILES-->
+        <Label
+            Grid.Row="0"
+            Grid.Column="1"
+            Text="{Binding SourceFilesLabel}"
+            SemanticProperties.HeadingLevel="Level1"
+            FontSize="28"
+            HorizontalOptions="Center"
+            x:Name="sourceFilesLabel"/>
+        <Frame
+            Grid.Row="1"
+            Grid.Column="1">
+
+            <ListView
+                ItemsSource="{Binding SourceFiles}"
+                SelectionMode="None"
+                VerticalOptions="StartAndExpand"
+                
+                Margin="0,10">
+
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextCell Text="{Binding}"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Frame>
+
+        <Entry
+            Grid.Row="2"
+            Grid.Column="1"
+            x:Name="sourceRoot"
+            Text="{Binding SourceRoot}"
+            IsReadOnly="True"/>
+
+        <Button
+            Grid.Row="4"
+            Grid.Column="1"
+            Text="Select Source Folder"
+            Margin="0,5"
+            Command="{Binding RetrieveSourceFilesCommand}"/>
+
+        <!--FAILED FILES-->
+        <Label
+            Grid.Column="2"
+            Grid.Row="0"
+            Text="{Binding FailedCopiesLabel}"
+            SemanticProperties.HeadingLevel="Level1"
+            FontSize="28"
+            HorizontalOptions="Center"/>
+
+        <Frame
+            Grid.Column="2"
+            Grid.Row="1">
+
+            <ListView
+                SelectionMode="None"
+                VerticalOptions="StartAndExpand"
+                Margin="0,10"
+                SeparatorVisibility="Default"
+                ItemsSource="{Binding FailedMessages}">
+                
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextCell Text="{Binding}"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Frame>
+
+        <ActivityIndicator 
+            Grid.Row="1"
+            Grid.Column="2"
+            IsRunning="{Binding CopyActivityIndicatorIsRunning}" />
+
+        <Button Grid.Column="2"
+                Grid.Row="2"
+                Text="Retry Failed"
+                Margin="0,5"
+                IsVisible="{Binding RetryFailedButtonIsVisible}"
+                Command="{Binding RetryFailedCommand}"/>
+
+        <Button Grid.Column="2"
+                Grid.Row="3"
+                Text="Cancel"
+                Margin="0,5"
+                IsVisible="{Binding CancelRetryFailedButtonIsVisible}"
+                Command="{Binding RetryFailedCancelCommand}"/>
+
+        <Button
+            Grid.Column="2"
+            Grid.Row="3"
+            Text="Cancel Copying"
+            FontAttributes="Bold"
+            Margin="0,5"
+            IsVisible="{Binding CancelButtonIsVisible}"
+            Command="{Binding StartCopyCancelCommand}"/>
+
+        <Button
+            Grid.Column="2"
+            Grid.Row="3"
+            Text="Start Copying"
+            FontAttributes="Bold"
+            Margin="0,5"
+            IsVisible="{Binding StartCopyButtonIsVisible}"
+            Command="{Binding StartCopyCommand}"/>
+
+        <!--COPIED FILES-->
+
+        <Label
+            Grid.Column="3"
+            Grid.Row="0"
+            Text="{Binding TargetFilesLabel}"
+            FontSize="28"
+            HorizontalOptions="Center"/>
+
+
+        <Frame
+            Grid.Column="3"
+            Grid.Row="1">
+
+            <ListView
+                x:Name="copiedListView" 
+                SelectionMode="None"
+                VerticalOptions="StartAndExpand"
+                Margin="0,10"
+                SeparatorVisibility="Default"
+                ItemsSource="{Binding TargetFiles}">
+                
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextCell Text="{Binding}"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Frame>
+
+        <Entry
+            Grid.Column="3"
+            Grid.Row="2"
+            Text="{Binding TargetRoot}"
+            IsReadOnly="True"/>
+
+        <Button
+            Grid.Row="3"
+            Grid.Column="3"
+            Command="{Binding RetrieveTargetFilesCommand}"
+            Text="Select Target Folder"
+            Margin="0,5"
+            />
+
+        <!--END-->
+
+    </Grid>
+
+</ContentPage>
