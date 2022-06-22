@@ -60,6 +60,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\FileConvoyLib\FileSystemAccess.csproj" />
 	  <ProjectReference Include="..\AppLogic\AppLogic.csproj" />
+	  <ProjectReference Include="..\FileConvoy\FileConvoy.csproj" />
 	</ItemGroup>
 
 </Project>

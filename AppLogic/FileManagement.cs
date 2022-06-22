@@ -1,8 +1,8 @@
-﻿using FileSystemAccess;
+﻿using FileConvoy;
 
 namespace AppLogic;
 
-public class FileConvoy
+public class FileManagement
 {
     public string SourceRoot;
     private HashSet<string> _allRelativeSubDirs;
@@ -14,7 +14,7 @@ public class FileConvoy
     public bool Overwrite;
     public string TargetRoot;
 
-    public FileConvoy()
+    public FileManagement()
     {
         AllFailedCopies = new HashSet<FailedCopy>();
     }

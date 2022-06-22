@@ -2,7 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using AppLogic;
-using FileSystemAccess;
+using FileConvoy;
 using System;
 
 namespace Convoy.ViewModels;
@@ -10,7 +10,7 @@ namespace Convoy.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly IFolderPicker _folderPicker;
-    private FileConvoy fileConvoy;
+    private FileManagement fileManagement;
     private CancellationToken _cancellationToken;
 
     [ObservableProperty]
@@ -72,7 +72,7 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(IFolderPicker folderPicker)
     {
         _folderPicker = folderPicker;
-        fileConvoy = new FileConvoy();
+        fileManagement = new FileManagement();
         FailedMessages = new List<string>();
         StartCopyButtonIsVisible = true;
         CancelButtonIsVisible = false;
@@ -97,9 +97,9 @@ public partial class MainViewModel : ObservableObject
 
 async Task RefreshSourceFiles()
     {
-        fileConvoy.SourceRoot = SourceRoot;
-        await fileConvoy.InspectSourceDirectoryAsync();
-        var sourceFiles = fileConvoy.AllSourceFilePaths;
+        fileManagement.SourceRoot = SourceRoot;
+        await fileManagement.InspectSourceDirectoryAsync();
+        var sourceFiles = fileManagement.AllSourceFilePaths;
         SourceFiles = sourceFiles;
         SourceFilesLabel = $"Source Files: {SourceFiles.Count}";
     }
@@ -139,17 +139,17 @@ async Task RefreshSourceFiles()
 
         try
         {
-            await fileConvoy.CopyFiles(Overwrite, progress, cancellationToken);
+            await fileManagement.CopyFiles(Overwrite, progress, cancellationToken);
         }
         catch (OperationCanceledException)
         {
-            TargetFilesLabel = $"Cancelled after copying {fileConvoy.AllSuccessCopies.Count} files";
+            TargetFilesLabel = $"Cancelled after copying {fileManagement.AllSuccessCopies.Count} files";
             CopyActivityIndicatorIsRunning = false;
             ProgressBarIsVisible = false;
             return;
         }
 
-        FailedCopies = fileConvoy.AllFailedCopies;
+        FailedCopies = fileManagement.AllFailedCopies;
         FailedMessages.Clear();
         var _failedMessages = new List<string>();
         foreach (var f in FailedCopies)
@@ -158,7 +158,7 @@ async Task RefreshSourceFiles()
         }
         FailedMessages = _failedMessages;
         await RefreshTargetFiles();
-        TargetFilesLabel = $"Copied Files: {fileConvoy.AllSuccessCopies.Count}";
+        TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
         CopyActivityIndicatorIsRunning = false;
         ProgressBarIsVisible = false;
         CancelButtonIsVisible = false;
@@ -201,20 +201,20 @@ async Task RefreshSourceFiles()
 
         try
         {
-            await fileConvoy.RetryFailed(Overwrite, progress, cancellationToken);
+            await fileManagement.RetryFailed(Overwrite, progress, cancellationToken);
         }
         catch (OperationCanceledException)
         {
-            TargetFilesLabel = $"Cancelled after copying {fileConvoy.AllSuccessCopies.Count} files";
+            TargetFilesLabel = $"Cancelled after copying {fileManagement.AllSuccessCopies.Count} files";
             CopyActivityIndicatorIsRunning = false;
             ProgressBarIsVisible = false;
             CancelRetryFailedButtonIsVisible = false;
             return;
         }
 
-        FailedCopies = fileConvoy.AllFailedCopies;
+        FailedCopies = fileManagement.AllFailedCopies;
         await RefreshTargetFiles();
-        TargetFilesLabel = $"Copied Files: {fileConvoy.AllSuccessCopies.Count}";
+        TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
         CopyActivityIndicatorIsRunning = false;
         ProgressBarIsVisible = false;
         if (FailedCopies.Count > 0)
@@ -252,9 +252,9 @@ async Task RefreshSourceFiles()
 
     private async Task RefreshTargetFiles()
     {
-        fileConvoy.TargetRoot = TargetRoot;
-        await fileConvoy.InspectTargetDirectoryAsync();
-        TargetFiles = fileConvoy.AllTargetFilePaths;
+        fileManagement.TargetRoot = TargetRoot;
+        await fileManagement.InspectTargetDirectoryAsync();
+        TargetFiles = fileManagement.AllTargetFilePaths;
         TargetFilesLabel = $"Files in Target Folder: {TargetFiles.Count}";
     }
 }
