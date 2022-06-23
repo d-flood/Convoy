@@ -12,6 +12,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IFolderPicker _folderPicker;
     private FileManagement fileManagement;
     private CancellationToken _cancellationToken;
+    private int InitialDisplayNumber;
 
     [ObservableProperty]
     List<string> failedMessages;
@@ -23,10 +24,7 @@ public partial class MainViewModel : ObservableObject
     double copyProgress;
 
     [ObservableProperty]
-    HashSet<string> copiedFiles;
-
-    [ObservableProperty]
-    HashSet<FailedCopy> failedCopies;
+    IEnumerable<FailedCopy> failedCopies;
 
     [ObservableProperty]
     bool overwrite;
@@ -46,10 +44,10 @@ public partial class MainViewModel : ObservableObject
     string targetFilesLabel;
 
     [ObservableProperty]
-    HashSet<string> sourceFiles;
+    IEnumerable<string> sourceFiles;
 
     [ObservableProperty]
-    HashSet<string> targetFiles;
+    IEnumerable<string> targetFiles;
 
     [ObservableProperty]
     bool copyActivityIndicatorIsRunning;
@@ -78,6 +76,7 @@ public partial class MainViewModel : ObservableObject
         CancelButtonIsVisible = false;
         CancelRetryFailedButtonIsVisible = false;
         RetryFailedButtonIsVisible = false;
+        InitialDisplayNumber = 100;
     }
 
     [RelayCommand]
@@ -92,16 +91,17 @@ public partial class MainViewModel : ObservableObject
         {
             return;
         }
+        CopyActivityIndicatorIsRunning = true;
         await RefreshSourceFiles();
+        CopyActivityIndicatorIsRunning = false;
     }
 
 async Task RefreshSourceFiles()
     {
         fileManagement.SourceRoot = SourceRoot;
         await fileManagement.InspectSourceDirectoryAsync();
-        var sourceFiles = fileManagement.AllSourceFilePaths;
-        SourceFiles = sourceFiles;
-        SourceFilesLabel = $"Source Files: {SourceFiles.Count}";
+        SourceFiles = fileManagement.AllSourceFilePaths.Take(InitialDisplayNumber);
+        SourceFilesLabel = $"Source Files: {fileManagement.AllSourceFilePaths.Count}";
     }
 
     [RelayCommand]
@@ -133,6 +133,7 @@ async Task RefreshSourceFiles()
         ProgressBarIsVisible = true;
         StartCopyButtonIsVisible = false;
         CancelButtonIsVisible = true;
+        CopyProgress = 0;
 
         Progress<DownloadProgress> progress = new Progress<DownloadProgress>();
         progress.ProgressChanged += ReportProgress;
@@ -149,21 +150,23 @@ async Task RefreshSourceFiles()
             return;
         }
 
-        FailedCopies = fileManagement.AllFailedCopies;
-        FailedMessages.Clear();
-        var _failedMessages = new List<string>();
-        foreach (var f in FailedCopies)
+        if (fileManagement.AllFailedCopies.Count > 0)
         {
-            _failedMessages.Add(f.ErrorMessage);
+            FailedCopies = fileManagement.AllFailedCopies.Take(InitialDisplayNumber);
+            var _failedMessages = new List<string>();
+            foreach (var f in FailedCopies)
+            {
+                _failedMessages.Add(f.ErrorMessage);
+            }
+            FailedMessages = _failedMessages;
         }
-        FailedMessages = _failedMessages;
         await RefreshTargetFiles();
         TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
         CopyActivityIndicatorIsRunning = false;
         ProgressBarIsVisible = false;
         CancelButtonIsVisible = false;
         StartCopyButtonIsVisible = true;
-        if (FailedCopies.Count > 0)
+        if (fileManagement.AllFailedCopies.Count > 0)
         {
             RetryFailedButtonIsVisible = true;
         }
@@ -174,11 +177,12 @@ async Task RefreshSourceFiles()
     {
         await RefreshSourceFiles();
         await RefreshTargetFiles();
-        var inSourceNotTarget = new HashSet<string>(SourceFiles);
-        inSourceNotTarget.ExceptWith(TargetFiles);
+        var inSourceNotTarget = new HashSet<string>(fileManagement.AllSourceFilePaths);
+        inSourceNotTarget.ExceptWith(fileManagement.AllTargetFilePaths);
         FailedMessages = inSourceNotTarget.ToList();
         FailedCopiesLabel = $"Source vs. Target: {FailedMessages.Count}";
     }
+
 
     [RelayCommand(AllowConcurrentExecutions = false, IncludeCancelCommand = true)]
     private Task RetryFailed(CancellationToken cancellationToken)
@@ -194,6 +198,7 @@ async Task RefreshSourceFiles()
         ProgressBarIsVisible = true;
         StartCopyButtonIsVisible = false;
         CancelRetryFailedButtonIsVisible = true;
+        CopyProgress = 0;
 
         FailedMessages = new List<string>();
         Progress<DownloadProgress> progress = new Progress<DownloadProgress>();
@@ -212,12 +217,12 @@ async Task RefreshSourceFiles()
             return;
         }
 
-        FailedCopies = fileManagement.AllFailedCopies;
+        FailedCopies = fileManagement.AllFailedCopies.Take(InitialDisplayNumber);
         await RefreshTargetFiles();
         TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
         CopyActivityIndicatorIsRunning = false;
         ProgressBarIsVisible = false;
-        if (FailedCopies.Count > 0)
+        if (fileManagement.AllFailedCopies.Count > 0)
         {
             RetryFailedButtonIsVisible = true;
         }
@@ -254,7 +259,7 @@ async Task RefreshSourceFiles()
     {
         fileManagement.TargetRoot = TargetRoot;
         await fileManagement.InspectTargetDirectoryAsync();
-        TargetFiles = fileManagement.AllTargetFilePaths;
-        TargetFilesLabel = $"Files in Target Folder: {TargetFiles.Count}";
+        TargetFiles = fileManagement.AllTargetFilePaths.Take(InitialDisplayNumber);
+        TargetFilesLabel = $"Files in Target Folder: {fileManagement.AllTargetFilePaths.Count}";
     }
 }
