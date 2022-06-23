@@ -62,7 +62,8 @@ namespace Convoy.Platforms.MacCatalyst
             parentController.PresentViewController(picker, true, null);
 
             var _dir = await tcs.Task;
-            return _dir.Replace("file:", "");
+            _dir = _dir.Replace("file:", "").Replace("//", "/").Replace("%20", " ");
+            return _dir;
         }
 
         internal class UIPresentationControllerDelegate : UIAdaptivePresentationControllerDelegate
