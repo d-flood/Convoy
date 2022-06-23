@@ -69,7 +69,8 @@
         FileInfo[] paths = null;
         try
         {
-            paths = src.GetFiles();
+            paths = await Task.Run(() => src.GetFiles());
+            //paths = src.GetFiles();
         }
         catch (DirectoryNotFoundException e)
         {
