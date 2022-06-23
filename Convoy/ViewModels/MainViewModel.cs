@@ -89,6 +89,7 @@ public partial class MainViewModel : ObservableObject
             }
         else
         {
+            await Application.Current.MainPage.DisplayAlert("Problem Loading Folder", $"Could not find\n{_sourceRoot}", "OK");
             return;
         }
         CopyActivityIndicatorIsRunning = true;
