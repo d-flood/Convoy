@@ -91,8 +91,8 @@ public class MoveFiles
         }
         try
         {
-            File.Copy(src, dst, _overwrite);
-            //await Task.Run(() => File.Copy(src, dst, _overwrite), cancellationToken);
+            //File.Copy(src, dst, _overwrite);
+            await Task.Run(() => File.Copy(src, dst, _overwrite), cancellationToken);
             CopiedFiles.Add(src);
         }
         catch (Exception e)
