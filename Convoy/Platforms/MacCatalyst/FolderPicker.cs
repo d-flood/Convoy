@@ -1,4 +1,4 @@
-﻿// code source and credit: https://github.com/jfversluis/MauiFolderPickerSample
+﻿// code source and credit for most of this file: https://github.com/jfversluis/MauiFolderPickerSample
 
 using System;
 using Foundation;
@@ -61,7 +61,8 @@ namespace Convoy.Platforms.MacCatalyst
 
             parentController.PresentViewController(picker, true, null);
 
-            return await tcs.Task;
+            var _dir = await tcs.Task;
+            return _dir.Replace("file:", "");
         }
 
         internal class UIPresentationControllerDelegate : UIAdaptivePresentationControllerDelegate
