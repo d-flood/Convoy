@@ -48,12 +48,14 @@ public class FileManagement
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await mover.CopyFiles(progress, SourceRoot, cancellationToken);
         }
         catch (OperationCanceledException)
         {
+            AllSuccessCopies = mover.CopiedFiles;
+            AllFailedCopies = mover.FailedToCopy;
             throw;
         }
-        await mover.CopyFiles(progress, SourceRoot, cancellationToken);
         AllSuccessCopies = mover.CopiedFiles;
         AllFailedCopies = mover.FailedToCopy;
     }

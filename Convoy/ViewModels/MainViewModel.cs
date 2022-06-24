@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using AppLogic;
 using FileConvoy;
-using System;
+using System.IO;
 
 namespace Convoy.ViewModels;
 
@@ -23,8 +23,6 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     double copyProgress;
 
-    [ObservableProperty]
-    IEnumerable<FailedCopy> failedCopies;
 
     [ObservableProperty]
     bool overwrite;
@@ -129,12 +127,7 @@ async Task RefreshSourceFiles()
 
     async Task CopyFiles(CancellationToken cancellationToken)
     {
-        FailedCopiesLabel = "";
-        CopyActivityIndicatorIsRunning = true;
-        ProgressBarIsVisible = true;
-        StartCopyButtonIsVisible = false;
-        CancelButtonIsVisible = true;
-        CopyProgress = 0;
+        StartCopyingGUIState();
 
         Progress<DownloadProgress> progress = new Progress<DownloadProgress>();
         progress.ProgressChanged += ReportProgress;
@@ -145,32 +138,17 @@ async Task RefreshSourceFiles()
         }
         catch (OperationCanceledException)
         {
-            TargetFilesLabel = $"Cancelled after copying {fileManagement.AllSuccessCopies.Count} files";
-            CopyActivityIndicatorIsRunning = false;
-            ProgressBarIsVisible = false;
+            CancelCopyingGUIState();
+            ProcessFailed();
             return;
         }
 
-        if (fileManagement.AllFailedCopies.Count > 0)
-        {
-            FailedCopies = fileManagement.AllFailedCopies.Take(InitialDisplayNumber);
-            var _failedMessages = new List<string>();
-            foreach (var f in FailedCopies)
-            {
-                _failedMessages.Add(f.ErrorMessage);
-            }
-            FailedMessages = _failedMessages;
-        }
+        ProcessFailed();
+        
         await RefreshTargetFiles();
         TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
-        CopyActivityIndicatorIsRunning = false;
-        ProgressBarIsVisible = false;
-        CancelButtonIsVisible = false;
-        StartCopyButtonIsVisible = true;
-        if (fileManagement.AllFailedCopies.Count > 0)
-        {
-            RetryFailedButtonIsVisible = true;
-        }
+
+        EndCopyingGUIState();
     }
 
     [RelayCommand(CanExecute = nameof(CheckEntries))]
@@ -194,14 +172,8 @@ async Task RefreshSourceFiles()
 
     async Task RetryFailedCopies(CancellationToken cancellationToken)
     {
-        FailedCopiesLabel = "";
-        CopyActivityIndicatorIsRunning = true;
-        ProgressBarIsVisible = true;
-        StartCopyButtonIsVisible = false;
-        CancelRetryFailedButtonIsVisible = true;
-        CopyProgress = 0;
+        StartRetryingGUIState();
 
-        FailedMessages = new List<string>();
         Progress<DownloadProgress> progress = new Progress<DownloadProgress>();
         progress.ProgressChanged += ReportProgress;
 
@@ -218,21 +190,9 @@ async Task RefreshSourceFiles()
             return;
         }
 
-        FailedCopies = fileManagement.AllFailedCopies.Take(InitialDisplayNumber);
         await RefreshTargetFiles();
-        TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
-        CopyActivityIndicatorIsRunning = false;
-        ProgressBarIsVisible = false;
-        if (fileManagement.AllFailedCopies.Count > 0)
-        {
-            RetryFailedButtonIsVisible = true;
-        }
-        else
-        {
-            RetryFailedButtonIsVisible = false;
-        }
-        StartCopyButtonIsVisible = true;
-        CancelRetryFailedButtonIsVisible = false;
+        ProcessFailed();
+        EndRetryingGUIState();
     }
 
 
@@ -241,7 +201,6 @@ async Task RefreshSourceFiles()
         CopyProgress = e.PercentageComplete;
         TargetFilesLabel = $"Copied: {e.CopedFiles.Count}";
         TargetFiles = e.CopedFiles;
-        FailedCopies = e.Failed;
     }
 
     private Boolean CheckEntries()
@@ -262,5 +221,85 @@ async Task RefreshSourceFiles()
         await fileManagement.InspectTargetDirectoryAsync();
         TargetFiles = fileManagement.AllTargetFilePaths.Take(InitialDisplayNumber);
         TargetFilesLabel = $"Files in Target Folder: {fileManagement.AllTargetFilePaths.Count}";
+    }
+
+    private void ProcessFailed()
+    {
+        if (fileManagement.AllFailedCopies.Any())
+        {
+            var failedCopies = fileManagement.AllFailedCopies.Take(InitialDisplayNumber);
+            var _failedMessages = new List<string>();
+            foreach (var f in failedCopies)
+            {
+                _failedMessages.Add(f.ErrorMessage);
+            }
+            FailedMessages = _failedMessages;
+            RetryFailedButtonIsVisible = true;
+        }
+    }
+
+    private void StartCopyingGUIState()
+    {
+        FailedCopiesLabel = "";
+        FailedMessages = new List<string>();
+        RetryFailedButtonIsVisible = false;
+        CopyActivityIndicatorIsRunning = true;
+        ProgressBarIsVisible = true;
+        StartCopyButtonIsVisible = false;
+        CancelButtonIsVisible = true;
+        CopyProgress = 0;
+    }
+
+    private void EndCopyingGUIState()
+    {
+        if (FailedMessages.Any()) { RetryFailedButtonIsVisible = true; }
+        else { RetryFailedButtonIsVisible = false; }
+        CopyActivityIndicatorIsRunning = false;
+        ProgressBarIsVisible = false;
+        StartCopyButtonIsVisible = true;
+        CancelButtonIsVisible = false;
+        CopyProgress = 0;
+    }
+
+    private void CancelCopyingGUIState()
+    {
+        TargetFilesLabel = $"Cancelled after copying {fileManagement.AllSuccessCopies.Count} files";
+        CopyActivityIndicatorIsRunning = false;
+        ProgressBarIsVisible = false;
+        CancelButtonIsVisible = false;
+        StartCopyButtonIsVisible = true;
+        if (fileManagement.AllFailedCopies.Count > 0)
+        {
+            RetryFailedButtonIsVisible = true;
+        }
+    }
+
+    private void StartRetryingGUIState()
+    {
+        FailedCopiesLabel = "";
+        CopyProgress = 0;
+        ProgressBarIsVisible = true;
+        StartCopyButtonIsVisible = false;
+        FailedMessages = new List<string>();
+        cancelButtonIsVisible = false;
+        CopyActivityIndicatorIsRunning = true;
+        CancelRetryFailedButtonIsVisible = true;
+    }
+
+    private void EndRetryingGUIState()
+    {
+        TargetFilesLabel = $"Copied Files: {fileManagement.AllSuccessCopies.Count}";
+        CopyActivityIndicatorIsRunning = false;
+        ProgressBarIsVisible = false;
+        StartCopyButtonIsVisible = true;
+        CancelRetryFailedButtonIsVisible = false;
+        if (FailedMessages.Any())
+        {
+            RetryFailedButtonIsVisible = true;
+        }
+        else
+        {
+            RetryFailedButtonIsVisible = false;
+        }
     }
 }

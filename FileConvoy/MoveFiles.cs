@@ -1,4 +1,7 @@
-﻿namespace FileConvoy;
+﻿using System.Security.Cryptography;
+using System.Threading.Tasks;
+
+namespace FileConvoy;
 
 public class MoveFiles
 {
@@ -18,7 +21,7 @@ public class MoveFiles
         CopiedFiles = new HashSet<string>();
     }
 
-    public void CreateNewDirectories()
+    public async void CreateNewDirectories()
     {
         foreach (var dir in _newDirs)
         {
@@ -28,7 +31,7 @@ public class MoveFiles
                 {
                     continue;
                 }
-                Directory.CreateDirectory(dir);
+                await Task.Run(() => Directory.CreateDirectory(dir));
             }
             catch (DirectoryNotFoundException)
             {
@@ -49,7 +52,7 @@ public class MoveFiles
     }
     public async Task CopyFiles(IProgress<DownloadProgress> progress, string sourceRoot, CancellationToken cancellationToken)
     {
-        List<Task<string>> tasks = new();
+        //List<Task> tasks = new();
         var report = new DownloadProgress();
         foreach (var file in _allFilePaths)
         {
@@ -60,49 +63,55 @@ public class MoveFiles
                 {
                     continue;
                 }
-                tasks.Add(Task.Run(() => CopyFile(file[0], file[1], progress, report, sourceRoot, cancellationToken)));
+                using FileStream sourceStream = File.Open(file[0], FileMode.Open);
+                using FileStream destinationStream = File.Create(file[1]);
+                await sourceStream.CopyToAsync(destinationStream, cancellationToken);
+                //tasks.Add(Task.Run(() => CopyFile(file[0], file[1], progress, report, sourceRoot, cancellationToken)));
                 //tasks.Add(CopyFile(file[0], file[1]));
+                CopiedFiles.Add(file[1]);
+            }
+            catch (OperationCanceledException e) 
+            {
+                FailedToCopy.Add(new FailedCopy(file[0], e.Message));
+                throw;
             }
             catch (Exception e)
             {
                 FailedToCopy.Add(new FailedCopy(file[0], e.Message));
             }
+            report.CopedFiles = CopiedFiles;
+            report.Failed = FailedToCopy;
+            report.PercentageComplete = Convert.ToDouble(CopiedFiles.Count) / Convert.ToDouble(_allFilePaths.Count);
+            progress.Report(report);
         }
-        await Task.WhenAll(tasks);
-
-        // https://devblogs.microsoft.com/pfxteam/processing-tasks-as-they-complete/
-        //while (tasks.Count > 0)
-        //{
-        //    var t = await Task.WhenAny(tasks);
-        //    tasks.Remove(t);
-        //    try
-        //    {
-        //        var CopiedFile = await t;
-        //    }
-        //    catch (OperationCanceledException) {}
-        //}
+        
+        //await Task.WhenAll(tasks);
     }
 
-    private async Task<string> CopyFile(string src, string dst, IProgress<DownloadProgress> progress, DownloadProgress report, string sourceRoot, CancellationToken cancellationToken)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
-        try
-        {
-            //File.Copy(src, dst, _overwrite);
-            await Task.Run(() => File.Copy(src, dst, _overwrite), cancellationToken);
-            CopiedFiles.Add(src);
-        }
-        catch (Exception e)
-        {
-            FailedToCopy.Add(new FailedCopy(Path.GetRelativePath(sourceRoot, src), e.Message));
-        }
-        report.CopedFiles = CopiedFiles;
-        report.Failed = FailedToCopy;
-        report.PercentageComplete = Convert.ToDouble(CopiedFiles.Count) / Convert.ToDouble(_allFilePaths.Count);
-        progress.Report(report);
-        return src;
-    }
+    //private async Task<string> CopyFile(string src, string dst, IProgress<DownloadProgress> progress, DownloadProgress report, string sourceRoot, CancellationToken cancellationToken)
+    //{
+    //    try
+    //    {
+    //        cancellationToken.ThrowIfCancellationRequested();
+    //        using FileStream sourceStream = File.Open(src, FileMode.Open);
+    //        using FileStream destinationStream = File.Create(dst);
+    //        await sourceStream.CopyToAsync(destinationStream, cancellationToken);
+    //        //await Task.Run(() => File.Copy(src, dst, _overwrite), cancellationToken);
+    //        CopiedFiles.Add(src);
+    //    }
+    //    catch (OperationCanceledException)
+    //    {
+    //        FailedToCopy.Add(new FailedCopy(Path.GetRelativePath(sourceRoot, src), e.Message));
+    //        throw;
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        FailedToCopy.Add(new FailedCopy(Path.GetRelativePath(sourceRoot, src), e.Message));
+    //    }
+    //    report.CopedFiles = CopiedFiles;
+    //    report.Failed = FailedToCopy;
+    //    report.PercentageComplete = Convert.ToDouble(CopiedFiles.Count) / Convert.ToDouble(_allFilePaths.Count);
+    //    progress.Report(report);
+    //    return src;
+    //}
 }
