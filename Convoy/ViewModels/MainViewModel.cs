@@ -23,7 +23,6 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     double copyProgress;
 
-
     [ObservableProperty]
     bool overwrite;
 
@@ -74,7 +73,7 @@ public partial class MainViewModel : ObservableObject
         CancelButtonIsVisible = false;
         CancelRetryFailedButtonIsVisible = false;
         RetryFailedButtonIsVisible = false;
-        InitialDisplayNumber = 100;
+        InitialDisplayNumber = 50;
     }
 
     [RelayCommand]
@@ -160,7 +159,7 @@ async Task RefreshSourceFiles()
         inSourceNotTarget.ExceptWith(fileManagement.AllTargetFilePaths);
         FailedMessages = inSourceNotTarget.ToList();
         FailedCopiesLabel = $"Source vs. Target: {FailedMessages.Count}";
-    }
+        }
 
 
     [RelayCommand(AllowConcurrentExecutions = false, IncludeCancelCommand = true)]
@@ -231,7 +230,7 @@ async Task RefreshSourceFiles()
             var _failedMessages = new List<string>();
             foreach (var f in failedCopies)
             {
-                _failedMessages.Add(f.ErrorMessage);
+                _failedMessages.Add($"<FILE>: {f.FullPath}\n<ERROR>: {f.ErrorMessage}");
             }
             FailedMessages = _failedMessages;
             RetryFailedButtonIsVisible = true;
