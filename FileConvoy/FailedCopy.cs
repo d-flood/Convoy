@@ -2,8 +2,8 @@
 
 public class FailedCopy
 {
-    public string FullPath;
-    public string ErrorMessage;
+    public string FullPath { get; set; }
+    public string ErrorMessage { get; set; }
 
     public FailedCopy(string fullPath, string errorMessage)
     {
