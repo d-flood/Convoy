@@ -2,7 +2,7 @@
 
 A cross platform desktop application for copying many large files across folders. It can compare the source and target directories and provide an audit of which files exist in source but not the target.
 
-![screen recording of Convoy usage](media/Convoy.fig)
+![screen recording of Convoy usage](media/Convoy.gif)
 
 ## Why?
 I found that when copying a directory containing thousands of files ranging from 1kb to 200gb to a network drive over WiFi, files were occasionally and silently dropped. This happened most often when using Finder on Mac. So, I needed a simple application to accomplish the following:
